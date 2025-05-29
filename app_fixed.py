@@ -1,12 +1,3 @@
-# Fixed Streamlit Dashboard with XGBoost and Heatmap Fix (Updated with px.imshow)
-
-import streamlit as st
-import pandas as pd
-import numpy as np
-import plotly.express as px
-import pickle
-import gdown
-
 st.set_page_config(page_title="Crop Yield Dashboard", layout="wide")
 
 @st.cache_data
@@ -23,55 +14,51 @@ def load_model():
 df = load_data()
 model = load_model()
 
-st.title("\U0001F33E Crop Yield Analysis Dashboard")
+st.title("🌾 Crop Yield Analysis Dashboard")
 
-# Key Stats
-col1, col2 = st.columns(2)
-col1.metric("Mean Yield", f"{df['Yield_tons_per_hectare'].mean():.2f} tons/ha")
-col2.metric("Unique Crops", f"{df['Crop'].nunique()}")
-
-# Sidebar inputs
-st.sidebar.markdown("### \u2699\ufe0f Scenario Setup")
+# Sidebar Inputs
+st.sidebar.markdown("### ⚙️ Scenario Setup")
 region = st.sidebar.selectbox("Region", df['Region'].unique())
 soil = st.sidebar.selectbox("Soil Type", df['Soil_Type'].unique())
 crop = st.sidebar.selectbox("Crop", df['Crop'].unique())
 rainfall = st.sidebar.slider("Rainfall (mm)", 100, 1000, 500)
-temp = st.sidebar.slider("Temperature (\u00b0C)", 15, 40, 27)
+temp = st.sidebar.slider("Temperature (°C)", 15, 40, 27)
 fert = st.sidebar.checkbox("Fertilizer Used")
 irrig = st.sidebar.checkbox("Irrigation Used")
 weather = st.sidebar.selectbox("Weather Condition", df['Weather_Condition'].unique())
 days = st.sidebar.slider("Days to Harvest", 60, 150, 104)
-
 # Tabs
 tab1, tab2, tab3 = st.tabs(["\U0001F9E9 Variable Analysis", "\U0001F9E0 Smart Prediction", "\U0001F3AF Recommendation"])
 
+# Tabs
+tab1, tab2, tab3 = st.tabs(["🧩 Variable Analysis", "🧠 Smart Prediction", "🎯 Recommendation"])
+
 # ---------------- Tab 1 -----------------
 with tab1:
-    st.header("\U0001F9E9 Variable Impact Analysis")
-    st.markdown("### \U0001F33E Average Yield by Crop and Region (Heatmap)")
+    st.header("🧩 Variable Impact Analysis")
+    st.markdown("### 🌾 Average Yield by Crop and Region (Filtered by Region & Soil Type)")
 
-    heatmap_data = df.groupby(["Crop", "Region"])["Yield_tons_per_hectare"].mean().reset_index()
-    pivot = heatmap_data.pivot(index="Crop", columns="Region", values="Yield_tons_per_hectare").fillna(0)
+    # Filter based on sidebar inputs
+    filtered_df = df[(df['Region'] == region) & (df['Soil_Type'] == soil)]
+    if filtered_df.empty:
+        st.warning("No data available for selected Region and Soil Type.")
+    else:
+        heatmap_data = filtered_df.groupby(["Crop", "Region"])["Yield_tons_per_hectare"].mean().reset_index()
+        pivot = heatmap_data.pivot(index="Crop", columns="Region", values="Yield_tons_per_hectare")
+        fig = px.imshow(
+            pivot,
+            text_auto=True,
+            aspect="auto",
+            color_continuous_scale='YlGnBu',
+            labels=dict(color="Yield (tons/ha)"),
+        )
+        fig.update_layout(margin=dict(t=30, b=30), height=400, font=dict(size=12))
+        st.plotly_chart(fig, use_container_width=True)
 
-
-    fig = px.imshow(
-        pivot.values,
-        x=pivot.columns,
-        y=pivot.index,
-        text_auto=True,
-        aspect="auto",
-        color_continuous_scale='YlGnBu',
-        labels=dict(color="Yield (tons/ha)"),
-        title="\U0001F33E Average Yield by Crop and Region (Heatmap)"
-    )
-
-    fig.update_layout(margin=dict(t=30, b=30), height=400, font=dict(size=12))
-    st.plotly_chart(fig, use_container_width=True)
-
-    st.markdown("### \U0001F9F1 Yield by Weather and Soil Type")
+    st.markdown("### 🌿 Yield by Weather and Soil Type")
     col1, col2 = st.columns(2)
     with col1:
-        weather_yield = df.groupby("Weather_Condition")["Yield_tons_per_hectare"].mean().reset_index()
+        weather_yield = filtered_df.groupby("Weather_Condition")["Yield_tons_per_hectare"].mean().reset_index()
         fig_weather = px.bar(weather_yield, x="Weather_Condition", y="Yield_tons_per_hectare",
                              color="Weather_Condition", title="Avg Yield by Weather")
         st.plotly_chart(fig_weather, use_container_width=True)
@@ -83,7 +70,7 @@ with tab1:
 
 # ---------------- Tab 2 -----------------
 with tab2:
-    st.header("\U0001F9E0 Smart Prediction")
+    st.header("🧠 Smart Prediction")
     st.info("Enter all variables to simulate a scenario")
 
     input_df = pd.DataFrame({
@@ -111,11 +98,10 @@ with tab2:
 
 # ---------------- Tab 3 -----------------
 with tab3:
-    st.header("\U0001F3AF Smart Recommendations")
+    st.header("🎯 Smart Recommendations")
     st.info("We'll recommend crops and treatment based on region and soil")
 
     recommend_df = df[(df['Region'] == region) & (df['Soil_Type'] == soil)]
-
     st.subheader("Top Recommended Crops")
     top_crop = recommend_df.groupby("Crop")["Yield_tons_per_hectare"].mean().sort_values(ascending=False).head(3)
     for crop_name, yld in top_crop.items():
