@@ -62,7 +62,7 @@ with tab1:
     st.markdown("---")
     st.markdown("### 🌧️ Rainfall Compared to Dataset")
     fig_rain = px.histogram(df, x="Rainfall_mm", nbins=30, title="Rainfall Distribution (mm)")
-    fig_rain.add_vline(x=rainfall, line_dash="dash", line_color="red", annotation_text="Your input", annotation_position="top right")
+    fig_rain.add_vline(x=rainfall, line_dash="dash", line_color="red", annotation_text="Your input", annotation_position="top right", line_width=3)
     st.plotly_chart(fig_rain, use_container_width=True)
 
     st.markdown("### 🌡️ Temperature Compared to Dataset")
