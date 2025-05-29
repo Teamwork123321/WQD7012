@@ -6,9 +6,7 @@ import numpy as np
 import plotly.express as px
 import pickle
 import gdown
-import pickle
 
-model = load_model()
 
 st.set_page_config(page_title="Crop Yield Dashboard", layout="wide")
 
