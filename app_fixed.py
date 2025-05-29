@@ -63,12 +63,13 @@ with tab1:
         if not pivot.empty:
             z = np.round(pivot.values, 2)
             text = [[f"{val:.2f}" for val in row] for row in z]
-            fig_heat = ff.create_annotated_heatmap(
-                z=z,
-                x=pivot.columns.tolist(),
-                y=pivot.index.tolist(),
-                annotation_text=text,
-                colorscale='YlGnBu'
+            fig_heat = px.imshow(
+                pivot,
+                text_auto=True,
+                aspect="auto",
+                color_continuous_scale='YlGnBu',
+                labels=dict(color="Yield (tons/ha)"),
+                title="🌾 Average Yield by Crop and Region"
             )
             fig_heat.update_layout(
                 title="🌾 Average Yield by Crop and Region (Filtered)",
