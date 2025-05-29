@@ -84,53 +84,31 @@ with tab1:
 
 
 # ---------------- Tab 2 -----------------
-# ----------------- Tab 2 -----------------
-with tab2:
-    st.header("🧠 Smart Prediction")
-    st.info("Enter all variables to simulate a precise scenario.")
+import shap
+import xgboost as xgb
+import pandas as pd
+import matplotlib.pyplot as plt
 
-    # 构建用户输入 DataFrame
-    input_df = pd.DataFrame({
-        'Region': [region], 'Soil_Type': [soil], 'Crop': [crop], 'Rainfall_mm': [rainfall],
-        'Temperature_Celsius': [temp], 'Fertilizer_Used': [int(fert)], 'Irrigation_Used': [int(irrig)],
-        'Weather_Condition': [weather], 'Days_to_Harvest': [days]
-    })
+# 加载 XGBoost 模型
+model = xgb.Booster()
+model.load_model("/mnt/data/xgboost_model.pkl")
 
-    # 编码分类变量
-    for col in ['Region', 'Soil_Type', 'Crop', 'Weather_Condition']:
-        le_map = {val: i for i, val in enumerate(df[col].unique())}
-        input_df[col] = input_df[col].map(le_map)
+# 构造模拟输入（1行），字段需匹配训练特征
+input_df = pd.DataFrame({
+    'Region': [2], 'Soil_Type': [1], 'Crop': [3], 'Rainfall_mm': [0.5],
+    'Temperature_Celsius': [0.6], 'Fertilizer_Used': [1], 'Irrigation_Used': [0],
+    'Weather_Condition': [0], 'Days_to_Harvest': [0.7]
+})
 
-    # 归一化数值变量
-    for col in ['Rainfall_mm', 'Temperature_Celsius', 'Days_to_Harvest']:
-        input_df[col] = (input_df[col] - df[col].min()) / (df[col].max() - df[col].min())
+# TreeExplainer (适用于 XGBoost，不依赖 torch 或 cuda)
+explainer = shap.TreeExplainer(model)
+shap_values = explainer.shap_values(input_df)
 
-    # 预测产量
-    pred = model.predict(input_df)[0]
-    st.metric("Predicted Yield", f"{pred:.2f} tons/ha")
+# 可视化当前样本的 SHAP 贡献（条形图）
+shap.summary_plot(shap_values, input_df, plot_type="bar", show=False)
+plt.tight_layout()
+plt.savefig("/mnt/data/shap_input_feature_impact.png")
 
-    # 生成 SHAP 动态特征解释图
-    st.subheader("🔍 Feature Contribution to This Prediction (SHAP)")
-    try:
-        import shap
-        import matplotlib.pyplot as plt
-
-        # 使用 TreeExplainer（兼容 CPU）
-        explainer = shap.TreeExplainer(model)
-        shap_values = explainer.shap_values(input_df)
-
-        # 绘制图像并保存为临时文件
-        shap.summary_plot(shap_values, input_df, plot_type="bar", show=False)
-        plt.tight_layout()
-        shap_img_path = "shap_summary_plot.png"
-        plt.savefig(shap_img_path)
-        plt.close()
-
-        # 显示图像
-        st.image(shap_img_path, caption="Feature Impact for Current Input", use_column_width=True)
-
-    except Exception as e:
-        st.warning("SHAP visualization failed. Reason: " + str(e))
 
 # ----------------- Tab 3 -----------------
 with tab3:
