@@ -9,3 +9,4 @@ matplotlib==3.10.3
 seaborn==0.13.2
 statsmodels==0.14.4
 gdown==4.7.1
+shap
