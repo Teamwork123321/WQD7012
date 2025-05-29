@@ -45,47 +45,43 @@ days = st.sidebar.slider("Days to Harvest", 60, 150, 104)
 # Tabs
 tab1, tab2, tab3 = st.tabs(["\U0001F9E9 Variable Analysis", "\U0001F9E0 Smart Prediction", "\U0001F3AF Recommendation"])
 # ---------------- Tab 1 -----------------
+# ---------------- Tab 1 -----------------
 with tab1:
-    st.header("🧩 Variable Impact Analysis")
-    
-    # 筛选用户输入下的区域和土壤类型
-    filtered_df = df[(df["Region"] == region) & (df["Soil_Type"] == soil)]
-    
-    if filtered_df.empty:
-        st.warning("⚠️ No data found for the selected Region and Soil Type.")
-    else:
-        # 热力图：作物和区域的平均产量
-        st.markdown("### 🌾 Average Yield by Crop and Region (Heatmap)")
+    st.header("📊 Your Input Summary & Visualization")
 
-        heatmap_data = filtered_df.groupby(["Crop", "Region"])["Yield_tons_per_hectare"].mean().reset_index()
-        pivot = heatmap_data.pivot(index="Crop", columns="Region", values="Yield_tons_per_hectare").fillna(0)
+    st.markdown("### 📌 Basic Info Overview")
+    col1, col2, col3 = st.columns(3)
+    col1.metric("🌍 Region", region)
+    col2.metric("🧱 Soil Type", soil)
+    col3.metric("🌾 Crop", crop)
 
-        fig = px.imshow(
-            pivot,
-            text_auto=True,
-            aspect="auto",
-            color_continuous_scale='YlGnBu',
-            labels=dict(color="Yield (tons/ha)"),
-            title="🌾 Yield Heatmap by Crop & Region"
-        )
-        fig.update_layout(margin=dict(t=30, b=30), height=400, font=dict(size=12))
-        st.plotly_chart(fig, use_container_width=True)
+    col4, col5 = st.columns(2)
+    col4.metric("🧪 Fertilizer Used", "✅" if fert else "❌")
+    col5.metric("💧 Irrigation Used", "✅" if irrig else "❌")
 
-        # 天气和土壤类型与产量的关系
-        st.markdown("### 🧱 Yield by Weather and Soil Type")
-        col1, col2 = st.columns(2)
+    st.markdown("---")
+    st.markdown("### 🌧️ Rainfall Compared to Dataset")
+    fig_rain = px.histogram(df, x="Rainfall_mm", nbins=30, title="Rainfall Distribution (mm)")
+    fig_rain.add_vline(x=rainfall, line_dash="dash", line_color="red", annotation_text="Your input", annotation_position="top right")
+    st.plotly_chart(fig_rain, use_container_width=True)
 
-        with col1:
-            weather_yield = filtered_df.groupby("Weather_Condition")["Yield_tons_per_hectare"].mean().reset_index()
-            fig_weather = px.bar(weather_yield, x="Weather_Condition", y="Yield_tons_per_hectare",
-                                 color="Weather_Condition", title="Avg Yield by Weather")
-            st.plotly_chart(fig_weather, use_container_width=True)
+    st.markdown("### 🌡️ Temperature Compared to Dataset")
+    fig_temp = px.histogram(df, x="Temperature_Celsius", nbins=30, title="Temperature Distribution (°C)")
+    fig_temp.add_vline(x=temp, line_dash="dash", line_color="red", annotation_text="Your input", annotation_position="top right")
+    st.plotly_chart(fig_temp, use_container_width=True)
 
-        with col2:
-            soil_yield = filtered_df.groupby("Soil_Type")["Yield_tons_per_hectare"].mean().reset_index()
-            fig_soil = px.bar(soil_yield, x="Soil_Type", y="Yield_tons_per_hectare",
-                              color="Soil_Type", title="Avg Yield by Soil Type")
-            st.plotly_chart(fig_soil, use_container_width=True)
+    st.markdown("### ⏳ Days to Harvest Compared to Dataset")
+    fig_days = px.histogram(df, x="Days_to_Harvest", nbins=30, title="Days to Harvest Distribution")
+    fig_days.add_vline(x=days, line_dash="dash", line_color="red", annotation_text="Your input", annotation_position="top right")
+    st.plotly_chart(fig_days, use_container_width=True)
+
+    st.markdown("### 🌤️ Weather Condition Comparison")
+    weather_avg = df.groupby("Weather_Condition")["Yield_tons_per_hectare"].mean().reset_index()
+    weather_avg["Selected"] = weather_avg["Weather_Condition"] == weather
+    fig_weather = px.bar(weather_avg, x="Weather_Condition", y="Yield_tons_per_hectare",
+                         color="Selected", color_discrete_map={True: "red", False: "lightblue"},
+                         title="Avg Yield by Weather Condition (Your selection in red)")
+    st.plotly_chart(fig_weather, use_container_width=True)
 
 
 # ---------------- Tab 2 -----------------
