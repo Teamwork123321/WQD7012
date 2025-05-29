@@ -44,60 +44,49 @@ days = st.sidebar.slider("Days to Harvest", 60, 150, 104)
 
 # Tabs
 tab1, tab2, tab3 = st.tabs(["\U0001F9E9 Variable Analysis", "\U0001F9E0 Smart Prediction", "\U0001F3AF Recommendation"])
-
 # ---------------- Tab 1 -----------------
 with tab1:
     st.header("🧩 Variable Impact Analysis")
-    st.markdown("### 🌾 Average Yield by Crop and Region (Dynamic Heatmap)")
-
-    # 根据用户选择筛选数据
-    filtered_df = df[
-        (df["Region"] == region) &
-        (df["Soil_Type"] == soil)
-    ]
-
-    if not filtered_df.empty:
-        heatmap_data = filtered_df.groupby(["Crop", "Region"])["Yield_tons_per_hectare"].mean().reset_index()
-        pivot = heatmap_data.pivot(index="Crop", columns="Region", values="Yield_tons_per_hectare")
-
-        if not pivot.empty:
-            z = np.round(pivot.values, 2)
-            text = [[f"{val:.2f}" for val in row] for row in z]
-            fig_heat = px.imshow(
-                pivot,
-                text_auto=True,
-                aspect="auto",
-                color_continuous_scale='YlGnBu',
-                labels=dict(color="Yield (tons/ha)"),
-                title="🌾 Average Yield by Crop and Region"
-            )
-            fig_heat.update_layout(
-                title="🌾 Average Yield by Crop and Region (Filtered)",
-                margin=dict(t=30, b=30),
-                height=400,
-                font=dict(size=12)
-            )
-            st.plotly_chart(fig_heat, use_container_width=True)
-        else:
-            st.warning("No heatmap data available for the selected Region and Soil Type.")
+    
+    # 筛选用户输入下的区域和土壤类型
+    filtered_df = df[(df["Region"] == region) & (df["Soil_Type"] == soil)]
+    
+    if filtered_df.empty:
+        st.warning("⚠️ No data found for the selected Region and Soil Type.")
     else:
-        st.warning("No matching records found. Try selecting different Region or Soil Type.")
+        # 热力图：作物和区域的平均产量
+        st.markdown("### 🌾 Average Yield by Crop and Region (Heatmap)")
 
-    # ----------- Other Charts (Unfiltered for comparison) ------------
-    st.markdown("### 🧱 Yield by Weather and Soil Type (Full Dataset)")
-    col1, col2 = st.columns(2)
+        heatmap_data = filtered_df.groupby(["Crop", "Region"])["Yield_tons_per_hectare"].mean().reset_index()
+        pivot = heatmap_data.pivot(index="Crop", columns="Region", values="Yield_tons_per_hectare").fillna(0)
 
-    with col1:
-        weather_yield = df.groupby("Weather_Condition")["Yield_tons_per_hectare"].mean().reset_index()
-        fig_weather = px.bar(weather_yield, x="Weather_Condition", y="Yield_tons_per_hectare",
-                             color="Weather_Condition", title="Avg Yield by Weather")
-        st.plotly_chart(fig_weather, use_container_width=True)
+        fig = px.imshow(
+            pivot,
+            text_auto=True,
+            aspect="auto",
+            color_continuous_scale='YlGnBu',
+            labels=dict(color="Yield (tons/ha)"),
+            title="🌾 Yield Heatmap by Crop & Region"
+        )
+        fig.update_layout(margin=dict(t=30, b=30), height=400, font=dict(size=12))
+        st.plotly_chart(fig, use_container_width=True)
 
-    with col2:
-        soil_yield = df.groupby("Soil_Type")["Yield_tons_per_hectare"].mean().reset_index()
-        fig_soil = px.bar(soil_yield, x="Soil_Type", y="Yield_tons_per_hectare",
-                          color="Soil_Type", title="Avg Yield by Soil Type")
-        st.plotly_chart(fig_soil, use_container_width=True)
+        # 天气和土壤类型与产量的关系
+        st.markdown("### 🧱 Yield by Weather and Soil Type")
+        col1, col2 = st.columns(2)
+
+        with col1:
+            weather_yield = filtered_df.groupby("Weather_Condition")["Yield_tons_per_hectare"].mean().reset_index()
+            fig_weather = px.bar(weather_yield, x="Weather_Condition", y="Yield_tons_per_hectare",
+                                 color="Weather_Condition", title="Avg Yield by Weather")
+            st.plotly_chart(fig_weather, use_container_width=True)
+
+        with col2:
+            soil_yield = filtered_df.groupby("Soil_Type")["Yield_tons_per_hectare"].mean().reset_index()
+            fig_soil = px.bar(soil_yield, x="Soil_Type", y="Yield_tons_per_hectare",
+                              color="Soil_Type", title="Avg Yield by Soil Type")
+            st.plotly_chart(fig_soil, use_container_width=True)
+
 
 # ---------------- Tab 2 -----------------
 with tab2:
