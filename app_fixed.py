@@ -147,13 +147,56 @@ with tab2:
     except Exception as e:
         st.error(f"❌ Prediction failed. Please check data format or encoding.\n\nError: {e}")
 
-# ---------------- Tab 3 -----------------
+# ----------------- Tab 3 -----------------
 with tab3:
-    st.header("🎯 Smart Recommendations")
-    st.info("We'll recommend crops and treatment based on region and soil")
+    st.header("🎯 Smart Recommendation & Simulation")
+    st.info("We’ll recommend crops and treatments based on basic inputs like region and soil.")
 
-    recommend_df = df[(df['Region'] == region) & (df['Soil_Type'] == soil)]
-    st.subheader("Top Recommended Crops")
+    region_reco = region
+    soil_reco = soil
+    crop_reco = crop
+    recommend_df = df[(df['Region'] == region_reco) & (df['Soil_Type'] == soil_reco)]
+
+    st.subheader("📌 Input Summary")
+    st.markdown(f"**Region:** {region_reco}  ")
+    st.markdown(f"**Soil Type:** {soil_reco}  ")
+    st.markdown(f"**Crop (optional):** {crop_reco}")
+
+    st.subheader("📌 Key Stats")
+    st.metric("Average Yield", f"{recommend_df['Yield_tons_per_hectare'].mean():.2f} tons/ha")
+    st.subheader("🌾 Top Recommended Crops")
     top_crop = recommend_df.groupby("Crop")["Yield_tons_per_hectare"].mean().sort_values(ascending=False).head(3)
     for crop_name, yld in top_crop.items():
         st.write(f"✅ {crop_name}: {yld:.2f} tons/ha")
+    st.subheader("🧪 Fertilizer Recommendation")
+    fert_diff = recommend_df[recommend_df["Fertilizer_Used"]==1]["Yield_tons_per_hectare"].mean() - \
+                recommend_df[recommend_df["Fertilizer_Used"]==0]["Yield_tons_per_hectare"].mean()
+    if fert_diff > 0.3:
+        st.success(f"💡 Fertilizer recommended: +{fert_diff:.2f} tons/ha")
+    else:
+        st.warning(f"⚠️ Minimal impact: +{fert_diff:.2f} tons/ha")
+    st.subheader("💧 Irrigation Recommendation")
+    irrig_diff = recommend_df[recommend_df["Irrigation_Used"]==1]["Yield_tons_per_hectare"].mean() - \
+                 recommend_df[recommend_df["Irrigation_Used"]==0]["Yield_tons_per_hectare"].mean()
+    if irrig_diff > 0.3:
+        st.success(f"💡 Irrigation recommended: +{irrig_diff:.2f} tons/ha")
+    else:
+        st.warning(f"⚠️ Minimal impact: +{irrig_diff:.2f} tons/ha")
+    st.subheader("🌡️ Temperature Simulation")
+    import copy
+    sim_input = recommend_df.iloc[0:1].copy()
+    for col in ['Region', 'Soil_Type', 'Crop', 'Weather_Condition']:
+        le_map = {val: i for i, val in enumerate(df[col].unique())}
+        sim_input[col] = sim_input[col].map(le_map)
+    for col in ['Rainfall_mm', 'Temperature_Celsius', 'Days_to_Harvest']:
+        sim_input[col] = (sim_input[col] - df[col].min()) / (df[col].max() - df[col].min())
+    temp_range = np.linspace(15, 40, 30)
+    sim_yields = []
+    for t in temp_range:
+        sim_temp = sim_input.copy()
+        sim_temp["Temperature_Celsius"] = (t - df['Temperature_Celsius'].min()) / (df['Temperature_Celsius'].max() - df['Temperature_Celsius'].min())
+        y = model.predict(sim_temp.drop(columns=['Yield_tons_per_hectare'], errors='ignore'))[0]
+        sim_yields.append(y)
+    fig = px.line(x=temp_range, y=sim_yields, labels={'x': 'Temperature (°C)', 'y': 'Predicted Yield'},
+                  title="Yield under Varying Temperature")
+    st.plotly_chart(fig)
