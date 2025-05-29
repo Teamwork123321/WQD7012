@@ -84,37 +84,53 @@ with tab1:
 
 
 # ---------------- Tab 2 -----------------
+# ----------------- Tab 2 -----------------
 with tab2:
     st.header("🧠 Smart Prediction")
     st.info("Enter all variables to simulate a precise scenario.")
+
+    # 构建用户输入 DataFrame
     input_df = pd.DataFrame({
         'Region': [region], 'Soil_Type': [soil], 'Crop': [crop], 'Rainfall_mm': [rainfall],
         'Temperature_Celsius': [temp], 'Fertilizer_Used': [int(fert)], 'Irrigation_Used': [int(irrig)],
         'Weather_Condition': [weather], 'Days_to_Harvest': [days]
     })
+
+    # 编码分类变量
     for col in ['Region', 'Soil_Type', 'Crop', 'Weather_Condition']:
         le_map = {val: i for i, val in enumerate(df[col].unique())}
         input_df[col] = input_df[col].map(le_map)
+
+    # 归一化数值变量
     for col in ['Rainfall_mm', 'Temperature_Celsius', 'Days_to_Harvest']:
         input_df[col] = (input_df[col] - df[col].min()) / (df[col].max() - df[col].min())
-    pred = model.predict(input_df)[0]
 
+    # 预测产量
+    pred = model.predict(input_df)[0]
     st.metric("Predicted Yield", f"{pred:.2f} tons/ha")
 
-    st.subheader("🔍 Feature Importance")
+    # 生成 SHAP 动态特征解释图
+    st.subheader("🔍 Feature Contribution to This Prediction (SHAP)")
     try:
-        importance = model.feature_importances_
-        features = input_df.columns.tolist()
-        feat_df = pd.DataFrame({"Feature": features, "Importance": importance})
-        feat_df = feat_df.sort_values(by="Importance", ascending=True)
+        import shap
+        import matplotlib.pyplot as plt
 
-        fig_imp = px.bar(feat_df, x="Importance", y="Feature", orientation='h',
-                         title="Model Feature Importance",
-                         color="Importance", color_continuous_scale="Plasma")
-        fig_imp.update_layout(height=400)
-        st.plotly_chart(fig_imp, use_container_width=True)
+        # 使用 TreeExplainer（兼容 CPU）
+        explainer = shap.TreeExplainer(model)
+        shap_values = explainer.shap_values(input_df)
+
+        # 绘制图像并保存为临时文件
+        shap.summary_plot(shap_values, input_df, plot_type="bar", show=False)
+        plt.tight_layout()
+        shap_img_path = "shap_summary_plot.png"
+        plt.savefig(shap_img_path)
+        plt.close()
+
+        # 显示图像
+        st.image(shap_img_path, caption="Feature Impact for Current Input", use_column_width=True)
+
     except Exception as e:
-        st.warning("Feature importance could not be displayed: " + str(e))
+        st.warning("SHAP visualization failed. Reason: " + str(e))
 
 # ----------------- Tab 3 -----------------
 with tab3:
