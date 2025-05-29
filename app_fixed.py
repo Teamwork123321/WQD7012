@@ -51,10 +51,13 @@ with tab1:
     st.markdown("### \U0001F33E Average Yield by Crop and Region (Heatmap)")
 
     heatmap_data = df.groupby(["Crop", "Region"])["Yield_tons_per_hectare"].mean().reset_index()
-    pivot = heatmap_data.pivot(index="Crop", columns="Region", values="Yield_tons_per_hectare")
+    pivot = heatmap_data.pivot(index="Crop", columns="Region", values="Yield_tons_per_hectare").fillna(0)
+
 
     fig = px.imshow(
-        pivot,
+        pivot.values,
+        x=pivot.columns,
+        y=pivot.index,
         text_auto=True,
         aspect="auto",
         color_continuous_scale='YlGnBu',
