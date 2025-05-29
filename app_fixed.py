@@ -62,17 +62,17 @@ with tab1:
     st.markdown("---")
     st.markdown("### 🌧️ Rainfall Compared to Dataset")
     fig_rain = px.histogram(df, x="Rainfall_mm", nbins=30, title="Rainfall Distribution (mm)")
-    fig_rain.add_vline(x=rainfall, line_dash="dash", line_color="red", annotation_text="Your input", annotation_position="top right", line_width=3)
+    fig_rain.add_vline(x=rainfall, line_dash="dash", line_color="blue", annotation_text="Your input", annotation_position="top right", line_width=6)
     st.plotly_chart(fig_rain, use_container_width=True)
 
     st.markdown("### 🌡️ Temperature Compared to Dataset")
     fig_temp = px.histogram(df, x="Temperature_Celsius", nbins=30, title="Temperature Distribution (°C)")
-    fig_temp.add_vline(x=temp, line_dash="dash", line_color="red", annotation_text="Your input", annotation_position="top right")
+    fig_temp.add_vline(x=temp, line_dash="dash", line_color="blue", annotation_text="Your input", annotation_position="top right",line_width=6)
     st.plotly_chart(fig_temp, use_container_width=True)
 
     st.markdown("### ⏳ Days to Harvest Compared to Dataset")
     fig_days = px.histogram(df, x="Days_to_Harvest", nbins=30, title="Days to Harvest Distribution")
-    fig_days.add_vline(x=days, line_dash="dash", line_color="red", annotation_text="Your input", annotation_position="top right")
+    fig_days.add_vline(x=days, line_dash="dash", line_color="blue", annotation_text="Your input", annotation_position="top right",line_width=6)
     st.plotly_chart(fig_days, use_container_width=True)
 
     st.markdown("### 🌤️ Weather Condition Comparison")
