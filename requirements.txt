@@ -1,0 +1,11 @@
+keras==3.10.0
+streamlit==1.33.0
+pandas>=1.5.0
+numpy>=1.23.0
+plotly>=5.10.0
+xgboost>=1.7.0
+scikit-learn>=1.1.0
+matplotlib==3.10.3
+seaborn==0.13.2
+statsmodels==0.14.4
+gdown==4.7.1
