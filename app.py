@@ -65,12 +65,13 @@ with tab1:
 
     st.markdown("### 🌾 Average Yield by Crop and Region (Heatmap)")
     heatmap_data = df.groupby(["Crop", "Region"])["Yield_tons_per_hectare"].mean().reset_index()
-    pivot = heatmap_data.pivot(index="Crop", columns="Region", values="Yield_tons_per_hectare")
+    pivot = heatmap_data.pivot(index="Crop", columns="Region", values="Yield_tons_per_hectare").fillna(0)
     z = np.round(pivot.values, 2)
     text = [[f"{val:.2f}" for val in row] for row in z]
     fig_heat = ff.create_annotated_heatmap(z=z, x=pivot.columns.tolist(), y=pivot.index.tolist(), colorscale='YlGnBu', annotation_text=text)
     fig_heat.update_layout(margin=dict(t=30, b=30), height=400)
     st.plotly_chart(fig_heat, use_container_width=True)
+
 
     st.markdown("### 🧱 Yield by Weather and Soil Type")
     col1, col2 = st.columns(2)
