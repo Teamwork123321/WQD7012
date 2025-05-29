@@ -18,18 +18,10 @@ import pickle
 st.set_page_config(page_title="Crop Yield Dashboard", layout="wide")
 
 
-import gdown
-import pandas as pd
-import streamlit as st
-
 @st.cache_data
 def load_data():
-    url = "https://drive.google.com/uc?id=144tLSJuPKheOcM-WDOnok9f9fqU4-Ovi"
-    output = "crop_yield.csv"
-    gdown.download(url, output, quiet=False)
-    return pd.read_csv(output)
-
-
+    url = "https://huggingface.co/datasets/Happylearning123/crop-yield-data/resolve/main/crop_yield.csv"
+    return pd.read_csv(url)
 
 # @st.cache_data
 # def load_data():
