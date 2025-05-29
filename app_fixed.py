@@ -45,7 +45,6 @@ days = st.sidebar.slider("Days to Harvest", 60, 150, 104)
 # Tabs
 tab1, tab2, tab3 = st.tabs(["\U0001F9E9 Variable Analysis", "\U0001F9E0 Smart Prediction", "\U0001F3AF Recommendation"])
 # ---------------- Tab 1 -----------------
-# ---------------- Tab 1 -----------------
 with tab1:
     st.header("📊 Your Input Summary & Visualization")
 
@@ -87,51 +86,35 @@ with tab1:
 # ---------------- Tab 2 -----------------
 with tab2:
     st.header("🧠 Smart Prediction")
-    st.info("Enter all variables to simulate a scenario")
-
-    # 获取用户输入
-    input_raw = pd.DataFrame({
+    st.info("Enter all variables to simulate a precise scenario.")
+    input_df = pd.DataFrame({
         'Region': [region], 'Soil_Type': [soil], 'Crop': [crop], 'Rainfall_mm': [rainfall],
         'Temperature_Celsius': [temp], 'Fertilizer_Used': [int(fert)], 'Irrigation_Used': [int(irrig)],
         'Weather_Condition': [weather], 'Days_to_Harvest': [days]
     })
+    for col in ['Region', 'Soil_Type', 'Crop', 'Weather_Condition']:
+        le_map = {val: i for i, val in enumerate(df[col].unique())}
+        input_df[col] = input_df[col].map(le_map)
+    for col in ['Rainfall_mm', 'Temperature_Celsius', 'Days_to_Harvest']:
+        input_df[col] = (input_df[col] - df[col].min()) / (df[col].max() - df[col].min())
+    pred = model.predict(input_df)[0]
 
+    st.metric("Predicted Yield", f"{pred:.2f} tons/ha")
+
+    st.subheader("🔍 Feature Importance")
     try:
-        # 加载编码器
-        with open("region_encoder.pkl", "rb") as f:
-            region_encoder = pickle.load(f)
-        with open("soil_encoder.pkl", "rb") as f:
-            soil_encoder = pickle.load(f)
-        with open("crop_encoder.pkl", "rb") as f:
-            crop_encoder = pickle.load(f)
-        with open("weather_encoder.pkl", "rb") as f:
-            weather_encoder = pickle.load(f)
-        with open("scaler.pkl", "rb") as f:
-            scaler = pickle.load(f)
-
-        # 编码分类变量
-        input_raw["Region"] = region_encoder.transform(input_raw["Region"])
-        input_raw["Soil_Type"] = soil_encoder.transform(input_raw["Soil_Type"])
-        input_raw["Crop"] = crop_encoder.transform(input_raw["Crop"])
-        input_raw["Weather_Condition"] = weather_encoder.transform(input_raw["Weather_Condition"])
-
-        # 归一化数值特征
-        input_scaled = input_raw.copy()
-        cols_to_scale = ['Rainfall_mm', 'Temperature_Celsius', 'Days_to_Harvest']
-        input_scaled[cols_to_scale] = scaler.transform(input_scaled[cols_to_scale])
-
-        # 模型预测
-        pred = model.predict(input_scaled)[0]
-        st.metric("Predicted Yield", f"{pred:.2f} tons/ha")
-
-        # 特征重要性可视化
         importance = model.feature_importances_
-        feat_df = pd.DataFrame({"Feature": input_scaled.columns, "Importance": importance}).sort_values(by="Importance")
-        fig_imp = px.bar(feat_df, x="Importance", y="Feature", orientation='h', title="Model Feature Importance")
-        st.plotly_chart(fig_imp, use_container_width=True)
+        features = input_df.columns.tolist()
+        feat_df = pd.DataFrame({"Feature": features, "Importance": importance})
+        feat_df = feat_df.sort_values(by="Importance", ascending=True)
 
+        fig_imp = px.bar(feat_df, x="Importance", y="Feature", orientation='h',
+                         title="Model Feature Importance",
+                         color="Importance", color_continuous_scale="Plasma")
+        fig_imp.update_layout(height=400)
+        st.plotly_chart(fig_imp, use_container_width=True)
     except Exception as e:
-        st.error(f"❌ Prediction failed. Please check data format or encoding.\n\nError: {e}")
+        st.warning("Feature importance could not be displayed: " + str(e))
 
 # ----------------- Tab 3 -----------------
 with tab3:
